@@ -1,0 +1,11 @@
+name = "captcha-verification"
+main = "src/index.js"
+compatibility_date = "2023-08-01"
+
+[[kv_namespaces]]
+binding = "TOKENS"
+id = "8b6c8b3baceb40009d018aedfa10312c"
+
+[[kv_namespaces]]
+binding = "CHALLENGES"
+id = "e225f25916364ad687774a686902643c"
