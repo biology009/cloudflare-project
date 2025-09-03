@@ -12,3 +12,7 @@ id = "8b6c8b3baceb40009d018aedfa10312c"
 [[kv_namespaces]]
 binding = "CHALLENGES"
 id = "e225f25916364ad687774a686902643c"
+
+[[kv_namespaces]]
+binding = "REDIRECTS"
+id = "142c941cc0664e68b71bce4689bd8771"
