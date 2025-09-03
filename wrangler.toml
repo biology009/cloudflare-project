@@ -2,6 +2,9 @@ name = "captcha-verification"
 main = "src/index.js"
 compatibility_date = "2023-08-01"
 
+[site]
+bucket = "./src/html"
+
 [[kv_namespaces]]
 binding = "TOKENS"
 id = "8b6c8b3baceb40009d018aedfa10312c"
