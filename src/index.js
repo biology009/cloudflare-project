@@ -1,8 +1,7 @@
 import { generateCaptcha, validateCaptcha } from './captcha.js';
-import { jsonResponse } from './utils.js';
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     if (url.pathname === "/captcha") {
@@ -14,9 +13,6 @@ export default {
       return validateCaptcha(body, env);
     }
 
-    return new Response("Not Found", { status: 404 });
-  }
-};
     return new Response("Not Found", { status: 404 });
   }
 };
