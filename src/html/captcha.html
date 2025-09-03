@@ -1,50 +1,66 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Captcha Verification</title>
   <style>
-    body { font-family: sans-serif; text-align: center; margin: 50px; }
-    .slider { width: 300px; margin: 20px auto; }
-    #status { font-size: 18px; margin-top: 10px; }
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 50px;
+    }
+    .slider {
+      width: 300px;
+      margin: 20px auto;
+    }
+    #captcha-img {
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
   </style>
 </head>
 <body>
   <h1>Complete the Puzzle</h1>
   <img id="captcha-img" src="" alt="Captcha Image" width="300">
-  <input type="range" min="0" max="100" value="0" class="slider" id="captcha-slider">
+  <div>
+    <input type="range" min="0" max="100" value="0" class="slider" id="captcha-slider">
+  </div>
   <button onclick="verify()">Verify</button>
-  <p id="status"></p>
+  <p id="result" style="font-weight: bold; color: red;"></p>
 
   <script>
     let challengeId;
-    
-    async function loadCaptcha() {
-      const res = await fetch('/captcha');
-      const data = await res.json();
-      document.getElementById('captcha-img').src = data.image;
-      challengeId = data.challengeId;
-    }
 
-    async function verify() {
+    // Fetch captcha from API
+    fetch('/captcha')
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('captcha-img').src = data.image;
+        challengeId = data.challengeId;
+      });
+
+    function verify() {
       const position = document.getElementById('captcha-slider').value;
-      const res = await fetch('/validate', {
+      fetch('/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ challengeId, position })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const resultEl = document.getElementById('result');
+        if (data.success) {
+          resultEl.style.color = 'green';
+          resultEl.textContent = '✅ Verified! Redirecting...';
+          setTimeout(() => {
+            window.location.href = 'https://your-redirect-url.com'; // Replace with actual redirect
+          }, 2000);
+        } else {
+          resultEl.textContent = '❌ Try again!';
+        }
       });
-      const data = await res.json();
-      const status = document.getElementById('status');
-      if (data.success) {
-        status.textContent = '✅ Verified!';
-        status.style.color = 'green';
-      } else {
-        status.textContent = '❌ Try again';
-        status.style.color = 'red';
-      }
     }
-
-    loadCaptcha();
   </script>
 </body>
-</html>
 </html>
