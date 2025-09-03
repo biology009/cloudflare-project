@@ -1,7 +1,8 @@
 import { generateCaptcha, validateCaptcha } from './captcha.js';
+import { jsonResponse } from './utils.js';
 
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request, env) {
     const url = new URL(request.url);
 
     if (url.pathname === "/captcha") {
