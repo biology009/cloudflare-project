@@ -1,38 +1,56 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Captcha Verification</title>
   <style>
-    body { font-family: sans-serif; text-align: center; margin: 50px; }
-    .slider { width: 300px; margin: 20px auto; }
+    body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+    img { width: 300px; border-radius: 10px; margin-bottom: 15px; }
+    input, button { margin: 10px; padding: 8px; font-size: 16px; }
   </style>
 </head>
 <body>
-  <h1>Complete the Puzzle</h1>
-  <img id="captcha-img" src="" alt="Captcha Image" width="300">
-  <input type="range" min="0" max="100" value="0" class="slider" id="captcha-slider">
-  <button onclick="verify()">Verify</button>
+  <h2>Slide Puzzle Captcha</h2>
+  <div id="captcha-container">
+    <p>Loading captcha...</p>
+  </div>
+  <input type="number" id="position" placeholder="Enter position (0-100)">
+  <button onclick="validateCaptcha()">Verify</button>
+  <p id="result"></p>
 
   <script>
     let challengeId;
 
-    fetch('/captcha')
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById('captcha-img').src = data.image;
-        challengeId = data.challengeId;
+    async function loadCaptcha() {
+      const res = await fetch("/captcha");
+      const data = await res.json();
+      challengeId = data.challengeId;
+
+      document.getElementById("captcha-container").innerHTML = `
+        <img src="${data.image}" alt="captcha image">
+        <p>${data.hint}</p>
+      `;
+    }
+
+    async function validateCaptcha() {
+      const position = document.getElementById("position").value;
+
+      const res = await fetch("/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ challengeId, position })
       });
 
-    function verify() {
-      const position = document.getElementById('captcha-slider').value;
-      fetch('/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ challengeId, position })
-      })
-      .then(res => res.json())
-      .then(data => alert(data.success ? 'Verified!' : 'Try again'));
+      const data = await res.json();
+      document.getElementById("result").textContent = data.success
+        ? "✅ Verified successfully!"
+        : "❌ " + data.message;
     }
+
+    loadCaptcha();
   </script>
+</body>
+</html>
 </body>
 </html>
