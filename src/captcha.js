@@ -12,11 +12,12 @@ export async function generateCaptcha(env) {
   const challengeId = crypto.randomUUID();
   const correctPosition = Math.floor(Math.random() * 100);
 
+  // Store correct position for 5 minutes
   await env.CHALLENGES.put(challengeId, correctPosition.toString(), { expirationTtl: 300 });
 
   return jsonResponse({
     challengeId,
-    image: `/img/${selected}`,
+    image: `/img/${selected}`, // Use /img/ folder path
     hint: "Slide the puzzle to the correct spot."
   });
 }
@@ -31,7 +32,7 @@ export async function validateCaptcha(body, env) {
   if (diff <= 5) {
     const token = crypto.randomUUID();
     const hmac = await generateHMAC(token);
-    await env.TOKENS.put(hmac, token, { expirationTtl: 900 });
+    await env.TOKENS.put(hmac, token, { expirationTtl: 900 }); // valid for 15 mins
 
     return jsonResponse({ success: true, token: hmac });
   }
