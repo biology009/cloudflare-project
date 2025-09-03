@@ -1,7 +1,8 @@
-const SECRET_KEY = "super-secret-key";
+const SECRET_KEY = "super-secret-key"; // You can also move this to Wrangler [vars]
 
 export async function generateHMAC(data) {
-  const keyData = new TextEncoder().encode(data + SECRET_KEY);
+  const enc = new TextEncoder();
+  const keyData = enc.encode(data + SECRET_KEY);
   const hashBuffer = await crypto.subtle.digest("SHA-256", keyData);
   return Array.from(new Uint8Array(hashBuffer))
     .map(b => b.toString(16).padStart(2, '0'))
