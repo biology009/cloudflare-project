@@ -1,51 +1,45 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Captcha Verification</title>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-    img { width: 200px; height: auto; margin: 20px; }
-    input[type="range"] { width: 200px; }
-    button { padding: 10px 20px; margin-top: 10px; }
+    body { font-family: sans-serif; text-align: center; margin: 50px; }
+    .slider { width: 300px; margin: 20px auto; }
   </style>
 </head>
 <body>
-  <h2>Slide to Verify</h2>
-  <div id="captcha-container">
-    <img id="captcha-img" src="" alt="Captcha">
-    <p id="hint"></p>
-    <input type="range" id="slider" min="0" max="100" value="50">
-    <button id="verify-btn">Verify</button>
-  </div>
-  <p id="result"></p>
+  <h1>Complete the Puzzle</h1>
+  <img id="captcha-img" src="" alt="Captcha Image" width="300">
+  <input type="range" min="0" max="100" value="0" class="slider" id="captcha-slider">
+  <button onclick="verify()">Verify</button>
 
   <script>
+    const redirectId = window.location.pathname.split("/").pop();
     let challengeId;
 
-    async function loadCaptcha() {
-      const res = await fetch('/captcha');
-      const data = await res.json();
-      challengeId = data.challengeId;
-      document.getElementById('captcha-img').src = data.image;
-      document.getElementById('hint').innerText = data.hint;
-    }
+    fetch('/captcha')
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('captcha-img').src = data.image;
+        challengeId = data.challengeId;
+      });
 
-    document.getElementById('verify-btn').addEventListener('click', async () => {
-      const position = document.getElementById('slider').value;
-      const res = await fetch('/validate', {
+    function verify() {
+      const position = document.getElementById('captcha-slider').value;
+      fetch('/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ challengeId, position })
+        body: JSON.stringify({ challengeId, position, redirectId })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          window.location.href = data.url;
+        } else {
+          alert(data.message);
+        }
       });
-      const data = await res.json();
-      document.getElementById('result').innerText = data.success
-        ? '✅ Verified! Token: ' + data.token
-        : '❌ ' + data.message;
-    });
-
-    loadCaptcha();
+    }
   </script>
 </body>
 </html>
