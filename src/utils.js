@@ -1,4 +1,4 @@
-const SECRET_KEY = "super-secret-key"; // You can also move this to Wrangler [vars]
+const SECRET_KEY = env.SECRET_KEY; // You can also move this to Wrangler [vars]
 
 export async function generateHMAC(data) {
   const enc = new TextEncoder();
