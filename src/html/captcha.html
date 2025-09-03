@@ -5,6 +5,7 @@
   <style>
     body { font-family: sans-serif; text-align: center; margin: 50px; }
     .slider { width: 300px; margin: 20px auto; }
+    #status { font-size: 18px; margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -12,26 +13,38 @@
   <img id="captcha-img" src="" alt="Captcha Image" width="300">
   <input type="range" min="0" max="100" value="0" class="slider" id="captcha-slider">
   <button onclick="verify()">Verify</button>
+  <p id="status"></p>
 
   <script>
     let challengeId;
-    fetch('/captcha')
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById('captcha-img').src = data.image;
-        challengeId = data.challengeId;
-      });
+    
+    async function loadCaptcha() {
+      const res = await fetch('/captcha');
+      const data = await res.json();
+      document.getElementById('captcha-img').src = data.image;
+      challengeId = data.challengeId;
+    }
 
-    function verify() {
+    async function verify() {
       const position = document.getElementById('captcha-slider').value;
-      fetch('/validate', {
+      const res = await fetch('/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ challengeId, position })
-      })
-      .then(res => res.json())
-      .then(data => alert(data.success ? 'Verified!' : 'Try again'));
+      });
+      const data = await res.json();
+      const status = document.getElementById('status');
+      if (data.success) {
+        status.textContent = '✅ Verified!';
+        status.style.color = 'green';
+      } else {
+        status.textContent = '❌ Try again';
+        status.style.color = 'red';
+      }
     }
+
+    loadCaptcha();
   </script>
 </body>
+</html>
 </html>
