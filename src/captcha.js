@@ -22,23 +22,16 @@ export async function generateCaptcha(env) {
 
 export async function validateCaptcha(body, env) {
   const { challengeId, position, redirectId } = body;
-
   const correctPosition = await env.CHALLENGES.get(challengeId);
   if (!correctPosition) return jsonResponse({ success: false, message: "Expired or invalid challenge" });
 
   const diff = Math.abs(parseInt(position) - parseInt(correctPosition));
   if (diff <= 5) {
-    const token = crypto.randomUUID();
-    const hmac = await generateHMAC(token);
-    await env.TOKENS.put(hmac, token, { expirationTtl: 900 });
+    const redirectUrl = await env.REDIRECTS.get(redirectId);
+    if (!redirectUrl) return jsonResponse({ success: false, message: "Redirect expired" });
 
-    // Get original short URL
-    const shortUrl = await env.REDIRECTS.get(redirectId);
-    if (!shortUrl) return jsonResponse({ success: false, message: "Invalid redirect link" });
-
-    return jsonResponse({ success: true, url: shortUrl });
+    return jsonResponse({ success: true, url: redirectUrl });
   }
 
   return jsonResponse({ success: false, message: "Verification failed" });
-                       }
-                       
+}
