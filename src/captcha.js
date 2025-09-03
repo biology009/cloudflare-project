@@ -7,7 +7,6 @@ export async function generateCaptcha(env) {
     "IMG_20250903_161810_656.jpg",
     "IMG_20250903_161810_740.jpg"
   ];
-
   const selected = images[Math.floor(Math.random() * images.length)];
   const challengeId = crypto.randomUUID();
   const correctPosition = Math.floor(Math.random() * 100);
@@ -22,7 +21,7 @@ export async function generateCaptcha(env) {
 }
 
 export async function validateCaptcha(body, env) {
-  const { challengeId, position } = body;
+  const { challengeId, position, redirectId } = body;
 
   const correctPosition = await env.CHALLENGES.get(challengeId);
   if (!correctPosition) return jsonResponse({ success: false, message: "Expired or invalid challenge" });
@@ -30,16 +29,16 @@ export async function validateCaptcha(body, env) {
   const diff = Math.abs(parseInt(position) - parseInt(correctPosition));
   if (diff <= 5) {
     const token = crypto.randomUUID();
-    const hmac = await generateHMAC(token, env.SECRET_KEY);
+    const hmac = await generateHMAC(token);
     await env.TOKENS.put(hmac, token, { expirationTtl: 900 });
 
-    return jsonResponse({ success: true, token: hmac });
+    // Get original short URL
+    const shortUrl = await env.REDIRECTS.get(redirectId);
+    if (!shortUrl) return jsonResponse({ success: false, message: "Invalid redirect link" });
+
+    return jsonResponse({ success: true, url: shortUrl });
   }
 
   return jsonResponse({ success: false, message: "Verification failed" });
-}
-    return jsonResponse({ success: true, token: hmac });
-  }
-
-  return jsonResponse({ success: false, message: "Verification failed" });
-}
+                       }
+                       
