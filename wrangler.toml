@@ -2,10 +2,8 @@ name = "captcha-verification"
 main = "src/index.js"
 compatibility_date = "2024-08-01"
 
-# Serve both /html/* and /img/* as static assets
-[assets]
-directory = "./src"
-binding = "ASSETS"
+[vars]
+TOKEN_TTL = "1800" # 30 min
 
 # KV namespaces
 [[kv_namespaces]]
@@ -15,3 +13,4 @@ id = "142c941cc0664e68b71bce4689bd8771"
 [[kv_namespaces]]
 binding = "CHALLENGES"
 id = "e225f25916364ad687774a686902643c"
+
