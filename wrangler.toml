@@ -4,6 +4,7 @@ compatibility_date = "2024-08-01"
 
 [vars]
 TOKEN_TTL = "1800" # 30 min
+API_TOKEN = "your-secret-api-token"
 
 # KV namespaces
 [[kv_namespaces]]
@@ -14,3 +15,7 @@ id = "142c941cc0664e68b71bce4689bd8771"
 binding = "CHALLENGES"
 id = "e225f25916364ad687774a686902643c"
 
+# Static assets (HTML, images)
+[assets]
+directory = "src" # It will serve files from /src folder
+binding = "ASSETS"
