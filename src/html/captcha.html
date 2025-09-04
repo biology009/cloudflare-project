@@ -1,45 +1,71 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
   <title>Captcha Verification</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: sans-serif; text-align: center; margin: 50px; }
-    .slider { width: 300px; margin: 20px auto; }
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 40px 16px; display: grid; place-items: center; }
+    .card { width: min(420px, 100%); padding: 24px; border-radius: 16px; box-shadow: 0 6px 24px rgba(0,0,0,.12); }
+    h1 { margin: 0 0 16px; font-size: 20px; }
+    .img-wrap { display: grid; place-items: center; margin-bottom: 16px; }
+    .img-wrap img { width: 100%; max-width: 360px; border-radius: 12px; }
+    .slider { width: 100%; margin: 12px 0 8px; }
+    .row { display: flex; gap: 12px; justify-content: center; margin-top: 8px; }
+    button { padding: 10px 16px; border-radius: 10px; border: 0; cursor: pointer; }
+    .hint { font-size: 12px; opacity: .7; margin-top: 4px; }
   </style>
 </head>
 <body>
-  <h1>Complete the Puzzle</h1>
-  <img id="captcha-img" src="" alt="Captcha Image" width="300">
-  <input type="range" min="0" max="100" value="0" class="slider" id="captcha-slider">
-  <button onclick="verify()">Verify</button>
+  <div class="card">
+    <h1>Complete the Puzzle</h1>
+    <div class="img-wrap">
+      <img id="captcha-img" src="" alt="Captcha Image" loading="lazy">
+    </div>
+    <input id="captcha-slider" class="slider" type="range" min="0" max="100" value="0" />
+    <div class="row">
+      <button id="verify-btn">Verify</button>
+      <button id="reset-btn" type="button">Reset</button>
+    </div>
+    <div class="hint" id="hint"></div>
+  </div>
 
   <script>
-    const redirectId = window.location.pathname.split("/").pop();
-    let challengeId;
+    const redirectId = location.pathname.split('/').pop();
+    let challengeId = null;
 
-    fetch('/captcha')
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById('captcha-img').src = data.image;
-        challengeId = data.challengeId;
-      });
+    async function startChallenge() {
+      const res = await fetch('/captcha');
+      if (!res.ok) { alert('Failed to load captcha'); return; }
+      const data = await res.json();
+      document.getElementById('captcha-img').src = data.image;
+      document.getElementById('hint').textContent = data.hint || '';
+      challengeId = data.challengeId;
+      document.getElementById('captcha-slider').value = 0;
+    }
 
-    function verify() {
+    async function verify() {
       const position = document.getElementById('captcha-slider').value;
-      fetch('/validate', {
+      const res = await fetch('/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ challengeId, position, redirectId })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          window.location.href = data.url;
-        } else {
-          alert(data.message);
-        }
       });
+
+      const data = await res.json().catch(() => ({}));
+      if (data && data.success && data.url) {
+        location.href = data.url;
+      } else {
+        alert(data.message || 'Verification failed');
+      }
     }
+
+    document.getElementById('verify-btn').addEventListener('click', verify);
+    document.getElementById('reset-btn').addEventListener('click', startChallenge);
+
+    // Kick off
+    startChallenge();
   </script>
 </body>
 </html>
