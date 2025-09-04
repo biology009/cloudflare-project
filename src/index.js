@@ -1,67 +1,21 @@
-import { generateCaptcha, validateCaptcha } from './captcha.js';
-import { jsonResponse } from './utils.js';
+import { handleCaptchaRequest, handleValidateRequest } from './captcha.js';
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    const path = url.pathname;
 
-    // Serve static assets directly
-    if (path.startsWith('/img/') || path.startsWith('/html/')) {
-      return env.ASSETS.fetch(request);
+    if (url.pathname === '/captcha') {
+      return handleCaptchaRequest(request, env);
+    }
+    if (url.pathname === '/validate') {
+      return handleValidateRequest(request, env);
+    }
+    if (url.pathname.startsWith('/html/captcha')) {
+      return new Response(await env.ASSETS.fetch('src/html/captcha.html'), {
+        headers: { 'Content-Type': 'text/html' }
+      });
     }
 
-    // Create a captcha challenge (JSON)
-    if (path === '/captcha') {
-      return generateCaptcha(env);
-    }
-
-    // Validate captcha (JSON)
-    if (path === '/validate' && request.method === 'POST') {
-      try {
-        const body = await request.json();
-        return validateCaptcha(body, env);
-      } catch {
-        return jsonResponse({ success: false, message: 'Invalid JSON' }, 400);
-      }
-    }
-
-    // Store short URL and return verification link
-    if (path === '/store-url' && request.method === 'POST') {
-      try {
-        const { short_url } = await request.json();
-        if (!short_url) {
-          return jsonResponse({ error: 'short_url is required' }, 400);
-        }
-
-        const token = crypto.randomUUID();
-        await env.REDIRECTS.put(token, short_url, { expirationTtl: 900 }); // 15 min
-
-        return jsonResponse({
-          verify_url: `${url.origin}/verify/${token}`
-        });
-      } catch {
-        return jsonResponse({ error: 'Internal server error' }, 500);
-      }
-    }
-
-    // Serve verification page after token check
-    if (path.startsWith('/verify/')) {
-      const token = path.split('/').pop();
-      if (!token) {
-        return new Response('Invalid token', { status: 400 });
-      }
-
-      const redirectUrl = await env.REDIRECTS.get(token);
-      if (!redirectUrl) {
-        return new Response('Token expired or invalid', { status: 404 });
-      }
-
-      // Serve /html/captcha.html explicitly
-      const assetReq = new Request(new URL('/html/captcha.html', url).toString(), request);
-      return env.ASSETS.fetch(assetReq);
-    }
-
-    return new Response('Not Found', { status: 404 });
+    return new Response('Not found', { status: 404 });
   }
 };
