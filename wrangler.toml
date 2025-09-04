@@ -1,18 +1,17 @@
 name = "captcha-verification"
 main = "src/index.js"
-compatibility_date = "2023-08-01"
+compatibility_date = "2024-08-01"
 
-[site]
-bucket = "./src/html"
+# Serve both /html/* and /img/* as static assets
+[assets]
+directory = "./src"
+binding = "ASSETS"
 
+# KV namespaces
 [[kv_namespaces]]
-binding = "TOKENS"
-id = "8b6c8b3baceb40009d018aedfa10312c"
+binding = "REDIRECTS"
+id = "142c941cc0664e68b71bce4689bd8771"
 
 [[kv_namespaces]]
 binding = "CHALLENGES"
 id = "e225f25916364ad687774a686902643c"
-
-[[kv_namespaces]]
-binding = "REDIRECTS"
-id = "142c941cc0664e68b71bce4689bd8771"
