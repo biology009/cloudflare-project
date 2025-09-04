@@ -1,71 +1,58 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>Captcha Verification</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    :root { color-scheme: light dark; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 40px 16px; display: grid; place-items: center; }
-    .card { width: min(420px, 100%); padding: 24px; border-radius: 16px; box-shadow: 0 6px 24px rgba(0,0,0,.12); }
-    h1 { margin: 0 0 16px; font-size: 20px; }
-    .img-wrap { display: grid; place-items: center; margin-bottom: 16px; }
-    .img-wrap img { width: 100%; max-width: 360px; border-radius: 12px; }
-    .slider { width: 100%; margin: 12px 0 8px; }
-    .row { display: flex; gap: 12px; justify-content: center; margin-top: 8px; }
-    button { padding: 10px 16px; border-radius: 10px; border: 0; cursor: pointer; }
-    .hint { font-size: 12px; opacity: .7; margin-top: 4px; }
-  </style>
+<meta charset="UTF-8">
+<title>Captcha Verification</title>
+<style>
+  body { font-family: sans-serif; text-align: center; margin: 50px; }
+  .slider-container { position: relative; width: 300px; margin: auto; }
+  .bg { width: 100%; }
+  .piece { position: absolute; top: 50px; cursor: grab; }
+  .slider { width: 100%; margin-top: 20px; }
+</style>
 </head>
 <body>
-  <div class="card">
-    <h1>Complete the Puzzle</h1>
-    <div class="img-wrap">
-      <img id="captcha-img" src="" alt="Captcha Image" loading="lazy">
-    </div>
-    <input id="captcha-slider" class="slider" type="range" min="0" max="100" value="0" />
-    <div class="row">
-      <button id="verify-btn">Verify</button>
-      <button id="reset-btn" type="button">Reset</button>
-    </div>
-    <div class="hint" id="hint"></div>
-  </div>
+<h2>Complete the Puzzle</h2>
+<div class="slider-container">
+  <img id="bg" class="bg" />
+  <img id="piece" class="piece" />
+</div>
+<input type="range" id="slider" class="slider" min="0" max="250" value="0" />
+<p id="status"></p>
+<script>
+const token = location.pathname.split('/').pop();
+let challengeId, positionX;
 
-  <script>
-    const redirectId = location.pathname.split('/').pop();
-    let challengeId = null;
+async function loadCaptcha() {
+  const res = await fetch(`/captcha?token=${token}`);
+  const data = await res.json();
 
-    async function startChallenge() {
-      const res = await fetch('/captcha');
-      if (!res.ok) { alert('Failed to load captcha'); return; }
-      const data = await res.json();
-      document.getElementById('captcha-img').src = data.image;
-      document.getElementById('hint').textContent = data.hint || '';
-      challengeId = data.challengeId;
-      document.getElementById('captcha-slider').value = 0;
-    }
+  document.getElementById('bg').src = data.image;
+  document.getElementById('piece').src = data.piece;
+  challengeId = data.challengeId;
+  positionX = data.positionX;
+}
+loadCaptcha();
 
-    async function verify() {
-      const position = document.getElementById('captcha-slider').value;
-      const res = await fetch('/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ challengeId, position, redirectId })
-      });
+document.getElementById('slider').addEventListener('input', e => {
+  document.getElementById('piece').style.left = e.target.value + 'px';
+});
 
-      const data = await res.json().catch(() => ({}));
-      if (data && data.success && data.url) {
-        location.href = data.url;
-      } else {
-        alert(data.message || 'Verification failed');
-      }
-    }
-
-    document.getElementById('verify-btn').addEventListener('click', verify);
-    document.getElementById('reset-btn').addEventListener('click', startChallenge);
-
-    // Kick off
-    startChallenge();
-  </script>
+document.getElementById('slider').addEventListener('change', async e => {
+  const currentX = parseInt(e.target.value);
+  const res = await fetch('/validate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ challengeId, position: { x: currentX } })
+  });
+  const result = await res.json();
+  if (result.success) {
+    document.getElementById('status').innerText = 'Verified! Redirecting...';
+    setTimeout(() => location.href = result.url, 1000);
+  } else {
+    document.getElementById('status').innerText = result.message;
+  }
+});
+</script>
 </body>
 </html>
