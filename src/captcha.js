@@ -1,48 +1,55 @@
-import { jsonResponse } from './utils.js';
+import { generatePuzzle, challenges } from './utils.js';
 
-export async function generateCaptcha(env) {
-  const images = [
-    '/img/IMG_20250903_161740_099.jpg',
-    '/img/IMG_20250903_161801_401.jpg',
-    '/img/IMG_20250903_161810_656.jpg',
-    '/img/IMG_20250903_161810_740.jpg'
-  ];
+export async function handleCaptchaRequest(req, env) {
+  const url = new URL(req.url);
+  const token = url.searchParams.get('token');
 
-  const selected = images[Math.floor(Math.random() * images.length)];
-  const challengeId = crypto.randomUUID();
-  const correctPosition = Math.floor(Math.random() * 100);
+  if (!token) {
+    return new Response(JSON.stringify({ error: 'Missing token' }), { status: 400 });
+  }
 
-  // Store the answer for 5 minutes
-  await env.CHALLENGES.put(challengeId, String(correctPosition), { expirationTtl: 300 });
+  const redirectUrl = await env.REDIRECTS.get(token);
+  if (!redirectUrl) {
+    return new Response(JSON.stringify({ error: 'Invalid or expired token' }), { status: 404 });
+  }
 
-  return jsonResponse({
+  const { bgBase64, pieceBase64, position, originalWidth, challengeId } = await generatePuzzle();
+
+  challenges.set(challengeId, { position, redirectUrl });
+
+  return new Response(JSON.stringify({
     challengeId,
-    image: selected,
-    hint: 'Slide the puzzle to the correct spot.'
+    image: bgBase64,
+    piece: pieceBase64,
+    positionX: position.x,
+    originalWidth
+  }), {
+    headers: { 'Content-Type': 'application/json' }
   });
 }
 
-export async function validateCaptcha(body, env) {
-  const { challengeId, position, redirectId } = body || {};
+export async function handleValidateRequest(req, env) {
+  const { challengeId, position } = await req.json();
+  const challenge = challenges.get(challengeId);
 
-  if (!challengeId || typeof position === 'undefined' || !redirectId) {
-    return jsonResponse({ success: false, message: 'Missing parameters' }, 400);
+  if (!challenge) {
+    return new Response(JSON.stringify({ success: false, message: 'Challenge expired' }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
-  const correctPosition = await env.CHALLENGES.get(challengeId);
-  if (!correctPosition) {
-    return jsonResponse({ success: false, message: 'Challenge expired' }, 400);
-  }
+  const correct = challenge.position;
+  const redirectUrl = challenge.redirectUrl;
 
-  const diff = Math.abs(parseInt(position, 10) - parseInt(correctPosition, 10));
+  const diff = Math.abs(position.x - correct.x);
   if (diff <= 5) {
-    const redirectUrl = await env.REDIRECTS.get(redirectId);
-    if (!redirectUrl) {
-      return jsonResponse({ success: false, message: 'Redirect expired' }, 400);
-    }
-    return jsonResponse({ success: true, url: redirectUrl });
+    challenges.delete(challengeId);
+    return new Response(JSON.stringify({ success: true, url: redirectUrl }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
-  return jsonResponse({ success: false, message: 'Verification failed' });
+  return new Response(JSON.stringify({ success: false, message: 'Incorrect position' }), {
+    headers: { 'Content-Type': 'application/json' }
+  });
 }
-
