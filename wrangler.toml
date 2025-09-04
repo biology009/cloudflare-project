@@ -4,7 +4,7 @@ compatibility_date = "2024-08-01"
 
 [vars]
 TOKEN_TTL = "1800" # 30 min
-API_TOKEN = "your-secret-api-token"
+API_TOKEN = "d9f4a1c8-3b6f-4a9e-91a7-6b02fef4aa73"
 
 # KV namespaces
 [[kv_namespaces]]
