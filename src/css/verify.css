@@ -1,5 +1,0 @@
-body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-.puzzle-container { max-width: 400px; margin: auto; }
-#puzzle-image { width: 100%; margin-bottom: 15px; }
-input[type="range"] { width: 100%; margin: 10px 0; }
-#message { margin-top: 10px; font-weight: bold; }
