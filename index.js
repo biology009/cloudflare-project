@@ -1,9 +1,10 @@
+import { getAssetFromKV } from "@cloudflare/kv-asset-handler";
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const { pathname } = url;
 
-    // ROUTES
     if (request.method === "POST" && pathname === "/store-url") {
       return handleStoreUrl(request, env);
     }
@@ -22,8 +23,12 @@ export default {
       return handleGetGap(token, env);
     }
 
-    // Serve static assets (CSS, JS, images)
-    return env.ASSETS.fetch(request);
+    // Serve static files
+    try {
+      return await getAssetFromKV({ request, waitUntil: ctx.waitUntil.bind(ctx) }, { env });
+    } catch (e) {
+      return new Response("Not found", { status: 404 });
+    }
   }
 };
 
@@ -32,10 +37,7 @@ async function handleStoreUrl(request, env) {
   try {
     const body = await request.json();
     const { short_url, token } = body;
-
-    if (!short_url || !token) {
-      return jsonResponse({ error: "Missing short_url or token" }, 400);
-    }
+    if (!short_url || !token) return jsonResponse({ error: "Missing data" }, 400);
 
     const images = [
       "img/IMG_20250903_161740_099.jpg",
@@ -44,23 +46,12 @@ async function handleStoreUrl(request, env) {
       "img/IMG_20250903_161810_740.jpg"
     ];
     const randomImage = images[Math.floor(Math.random() * images.length)];
+    const gap_x = Math.floor(Math.random() * (250 - 50) + 50);
 
-    const gap_x = Math.floor(Math.random() * (250 - 50) + 50); // 50-250 px
+    const tokenData = { short_url, image: randomImage, gap_x, attempts: 0 };
+    await env.TOKENS_KV.put(token, JSON.stringify(tokenData), { expirationTtl: parseInt(env.TOKEN_TTL) });
 
-    const tokenData = {
-      short_url,
-      image: randomImage,
-      gap_x,
-      attempts: 0
-    };
-
-    await env.TOKENS_KV.put(token, JSON.stringify(tokenData), {
-      expirationTtl: parseInt(env.TOKEN_TTL || "1800") // 30 min
-    });
-
-    return jsonResponse({
-      verify_url: `${request.url.replace("/store-url", "")}/verify/${token}`
-    });
+    return jsonResponse({ verify_url: `${request.url.replace("/store-url", "")}/verify/${token}` });
   } catch (err) {
     return jsonResponse({ error: err.message }, 500);
   }
@@ -70,70 +61,52 @@ async function handleStoreUrl(request, env) {
 async function handleVerifyPage(token, env) {
   const tokenData = await env.TOKENS_KV.get(token, { type: "json" });
   if (!tokenData) {
-    return new Response(`<h1>URL expired or invalid.</h1>`, {
-      headers: { "content-type": "text/html" }
-    });
+    return new Response("<h1>URL expired or invalid.</h1>", { headers: { "content-type": "text/html" } });
   }
 
-  const htmlAsset = await env.ASSETS.fetch(new Request("/html/verify.html"));
-  let html = await htmlAsset.text();
-
-  html = html.replace("{{TOKEN}}", token).replace("{{IMAGE}}", tokenData.image);
+  const htmlAsset = await env.__STATIC_CONTENT.get("html/verify.html", "text");
+  let html = htmlAsset.replace("{{TOKEN}}", token).replace("{{IMAGE}}", tokenData.image);
 
   return new Response(html, { headers: { "content-type": "text/html" } });
 }
 
-// GET /get-gap?token=
+// GET /get-gap
 async function handleGetGap(token, env) {
   const tokenData = await env.TOKENS_KV.get(token, { type: "json" });
   if (!tokenData) return jsonResponse({ error: "expired" }, 404);
-
   return jsonResponse({ gap_x: tokenData.gap_x });
 }
 
 // POST /verify-puzzle
 async function handleVerifyPuzzle(request, env) {
   const { token, slider_x } = await request.json();
-  if (!token || slider_x === undefined) {
-    return jsonResponse({ error: "Missing token or slider_x" }, 400);
-  }
+  if (!token || slider_x === undefined) return jsonResponse({ error: "Missing data" }, 400);
 
   const tokenData = await env.TOKENS_KV.get(token, { type: "json" });
-  if (!tokenData) {
-    return jsonResponse({ status: "expired" });
-  }
+  if (!tokenData) return jsonResponse({ status: "expired" });
 
   if (tokenData.attempts >= 3) {
     await env.TOKENS_KV.delete(token);
     return jsonResponse({ status: "max_attempts" });
   }
 
-  const tolerance = parseInt(env.TOLERANCE || "5");
+  const tolerance = parseInt(env.TOLERANCE);
   if (Math.abs(slider_x - tokenData.gap_x) <= tolerance) {
     const delay = Math.floor(Math.random() * 10) + 1;
     await env.TOKENS_KV.delete(token);
     return jsonResponse({ status: "ok", redirect: tokenData.short_url, delay });
   } else {
-    tokenData.attempts += 1;
+    tokenData.attempts++;
     if (tokenData.attempts >= 3) {
       await env.TOKENS_KV.delete(token);
       return jsonResponse({ status: "max_attempts" });
     } else {
-      await env.TOKENS_KV.put(token, JSON.stringify(tokenData), {
-        expirationTtl: parseInt(env.TOKEN_TTL || "1800")
-      });
-      return jsonResponse({
-        status: "wrong",
-        attempts_left: 3 - tokenData.attempts
-      });
+      await env.TOKENS_KV.put(token, JSON.stringify(tokenData), { expirationTtl: parseInt(env.TOKEN_TTL) });
+      return jsonResponse({ status: "wrong", attempts_left: 3 - tokenData.attempts });
     }
   }
 }
 
-// Utility
 function jsonResponse(obj, status = 200) {
-  return new Response(JSON.stringify(obj), {
-    status,
-    headers: { "Content-Type": "application/json" }
-  });
+  return new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
 }
