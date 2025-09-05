@@ -1,21 +1,14 @@
 name = "captcha-verification"
-main = "src/index.js"
+main = "index.js"
 compatibility_date = "2024-08-01"
 
+kv_namespaces = [
+  { binding = "TOKENS_KV", id = "142c941cc0664e68b71bce4689bd8771" }
+]
+
 [vars]
-TOKEN_TTL = "1800" # 30 min
-API_TOKEN = "f5d1b8e6-3c19-44b2-9e3c-5a11c041dbf4"
-WORKER_DOMAIN = "captcha-verification.instafail.workers.dev"
+TOKEN_TTL = "1800"
+TOLERANCE = "5"
 
-[assets]
-directory = "src" # It will serve files from /src folder
-binding = "ASSETS"
-
-# KV namespaces
-[[kv_namespaces]]
-binding = "REDIRECTS"
-id = "142c941cc0664e68b71bce4689bd8771"
-
-[[kv_namespaces]]
-binding = "CHALLENGES"
-id = "e225f25916364ad687774a686902643c"
+[site]
+bucket = "./src"
