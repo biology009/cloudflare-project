@@ -11,7 +11,7 @@ TOKEN_TTL = "1800"
 TOLERANCE = "5"
 
 [site]
-bucket = "./src"
+bucket = "./src/html"
 
 # wrangler.toml (wrangler v3.88.0^)
 [observability.logs]
