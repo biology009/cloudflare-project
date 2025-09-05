@@ -1,15 +1,14 @@
 {
   "name": "captcha-verification",
   "version": "1.0.0",
-  "description": "Cloudflare Worker for slider puzzle captcha verification",
-  "main": "src/main.js",
+  "type": "module",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy"
   },
   "dependencies": {
-    "itty-router": "^4.0.21"
-  },
+    "itty-router": "^3.0.12"
+  }
   "devDependencies": {
     "wrangler": "^3.114.14"
   }
