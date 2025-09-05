@@ -1,5 +1,5 @@
 name = "captcha-verification"
-main = "main.js"
+main = "src/main.js"
 compatibility_date = "2024-08-01"
 
 kv_namespaces = [
