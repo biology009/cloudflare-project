@@ -1,27 +1,26 @@
-import { logInfo, logError } from '../utils/logger.js';
+import { logInfo, logError } from "../utils/logger.js";
 
-export default async function handleVerifyPage(request, env) {
+export async function verifyPageHandler(request, env) {
   try {
-    const token = request.params.token;
-    const tokenData = await env.TOKENS_KV.get(token, { type: 'json' });
+    const { token } = request.params;
+    if (!token) return new Response("Invalid token", { status: 400 });
 
-    if (!tokenData) {
-      logError(`Invalid token: ${token}`);
-      return new Response('<h1>URL expired or invalid.</h1>', {
-        headers: { 'content-type': 'text/html' }
-      });
-    }
+    const data = await env.TOKENS_KV.get(token);
+    if (!data) return new Response("Invalid or expired token", { status: 404 });
 
-    const htmlAsset = await env.ASSETS.fetch(new Request('/verify.html'));
-    let html = await htmlAsset.text();
+    const parsed = JSON.parse(data);
+    const html = await fetch(new URL("../html/verify.html", import.meta.url)).then(res => res.text());
 
-    html = html.replace('{{TOKEN}}', token).replace('{{IMAGE}}', tokenData.image);
+    const page = html
+      .replace("{{IMAGE}}", parsed.image)
+      .replace("{{TOKEN}}", token);
 
-    logInfo(`Verify page served for token: ${token}`);
-
-    return new Response(html, { headers: { 'content-type': 'text/html' } });
+    logInfo("verify-page", `Loaded page for token ${token}`);
+    return new Response(page, {
+      headers: { "Content-Type": "text/html" }
+    });
   } catch (err) {
-    logError(`Error in verify-page: ${err.message}`);
-    return new Response('<h1>Internal Server Error</h1>', { status: 500 });
+    logError("verify-page", err.message);
+    return new Response("Server error", { status: 500 });
   }
 }
