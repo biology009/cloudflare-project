@@ -7,8 +7,12 @@ kv_namespaces = [
 ]
 
 [site]
-bucket = "."        # Serve index.html, style.css, assets/
+bucket = "."        # Serves index.html, style.css, assets/
 entry-point = "worker"
 
 [build]
 command = ""
+
+# Enable logs
+[observability]
+logs = true
