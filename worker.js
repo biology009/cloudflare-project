@@ -9,43 +9,70 @@ function randomToken(len = 8) {
 
 export default {
   async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    const path = url.pathname;
+    const { pathname } = new URL(request.url);
 
-    try {
-      // ----------------------------
-      // 1. Store URL → return JSON
-      // ----------------------------
-      if (path === "/store" && request.method === "POST") {
-        try {
-          const { url: longUrl } = await request.json();
-          if (!longUrl) {
-            throw new Error("Missing URL in request");
-          }
+    if (request.method === "POST" && pathname === "/store") {
+      try {
+        const body = await request.json();
+        const url = body.url;
 
-          const token = randomToken(12);
-
-          await env.SHORT_URLS.put(
-            token,
-            JSON.stringify({ url: longUrl }),
-            { expirationTtl: 1800 }
-          );
-
+        if (!url) {
           return new Response(
-            JSON.stringify({
-              token,
-              shortUrl: `${url.origin}/verify/${token}`,
-            }),
-            { headers: { "Content-Type": "application/json" } }
-          );
-        } catch (err) {
-          console.error("Error in /store:", err);
-          return new Response(
-            JSON.stringify({ error: "Failed to store URL" }),
+            JSON.stringify({ error: "Missing 'url' in request" }),
             { status: 400, headers: { "Content-Type": "application/json" } }
           );
         }
+
+        // Generate random token
+        const token = crypto.randomUUID();
+
+        // Store mapping in KV
+        await env.URL_KV.put(token, url);
+
+        // Build verify URL
+        const verifyUrl = `${new URL(request.url).origin}/verify/${token}`;
+
+        // 🔥 Log everything for debugging
+        console.log("📌 Storing new URL in KV");
+        console.log("➡️ Original URL:", url);
+        console.log("🔑 Generated Token:", token);
+        console.log("🔗 Verify URL:", verifyUrl);
+
+        return new Response(
+          JSON.stringify({ token, verify_url: verifyUrl }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        );
+      } catch (err) {
+        console.error("❌ Error in /store:", err.message);
+        return new Response(
+          JSON.stringify({ error: "Invalid request body" }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
       }
+    }
+
+    if (request.method === "GET" && pathname.startsWith("/verify/")) {
+      const token = pathname.split("/verify/")[1];
+      if (!token) {
+        return new Response("Token missing", { status: 400 });
+      }
+
+      const originalUrl = await env.URL_KV.get(token);
+
+      if (!url) {
+        return new Response("Invalid or expired token", { status: 404 });
+      }
+
+      // 🔥 Log verification hit
+      console.log("✅ Token verified:", token, "➡️ Redirecting to:", url);
+
+      return Response.redirect(url, 302);
+    }
+
+    return new Response("Not found", { status: 404 });
+  },
+};
+
 
       // ------------------------------------
       // 2. Serve CAPTCHA page with injection
