@@ -1,5 +1,5 @@
 {
-  "name": "slider-captcha-demo",
+  "name": "slider-captcha",
   "version": "1.0.0",
   "description": "Cloudflare Worker slider captcha with KV",
   "main": "worker.js",
