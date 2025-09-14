@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Slider CAPTCHA</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h2>Verify You Are Human</h2>
+  <div class="captcha-container">
+    <canvas id="bgCanvas" width="300" height="200"></canvas>
+    <canvas id="pieceCanvas" class="puzzle-piece"></canvas>
+    <input type="range" min="0" max="250" value="0" id="sliderInput">
+    <button id="verifyBtn">Verify</button>
+  </div>
+
+  <script>
+    const bgCanvas = document.getElementById("bgCanvas");
+    const pieceCanvas = document.getElementById("pieceCanvas");
+    const bgCtx = bgCanvas.getContext("2d");
+    const pieceCtx = pieceCanvas.getContext("2d");
+    const slider = document.getElementById("sliderInput");
+
+    let pieceX = 0;
+
+    const img = new Image();
+    img.src = captchaConfig.image;
+
+    img.onload = () => {
+      // Draw background with missing piece
+      bgCtx.drawImage(img, 0, 0, 300, 200);
+      bgCtx.clearRect(captchaConfig.cutX, captchaConfig.cutY, captchaConfig.size, captchaConfig.size);
+
+      // Draw the puzzle piece
+      pieceCanvas.width = captchaConfig.size;
+      pieceCanvas.height = captchaConfig.size;
+      pieceCtx.drawImage(
+        img,
+        captchaConfig.cutX, captchaConfig.cutY, captchaConfig.size, captchaConfig.size,
+        0, 0, captchaConfig.size, captchaConfig.size
+      );
+
+      // Position piece vertically aligned
+      pieceCanvas.style.top = captchaConfig.cutY + "px";
+      pieceCanvas.style.left = "0px";
+    };
+
+    slider.addEventListener("input", (e) => {
+      pieceX = parseInt(e.target.value);
+      pieceCanvas.style.left = pieceX + "px";
+    });
+
+    document.getElementById("verifyBtn").onclick = async () => {
+      const res = await fetch("/verify-submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: captchaConfig.token, userX: pieceX })
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.location.href = data.redirect;
+      } else {
+        alert(data.msg);
+      }
+    };
+  </script>
+  <script></script> <!-- Worker injects captchaConfig here -->
+</body>
+</html>
+        
