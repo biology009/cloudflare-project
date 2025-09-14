@@ -1,18 +1,14 @@
-name = "captcha-verification"
-main = "src/main.js"
-compatibility_date = "2024-08-01"
+name = "slider-captcha-demo"
+main = "worker.js"
+compatibility_date = "2023-10-01"
 
 kv_namespaces = [
-  { binding = "TOKENS_KV", id = "142c941cc0664e68b71bce4689bd8771" }
+  { binding = "SHORT_URLS", id = "142c941cc0664e68b71bce4689bd8771" }
 ]
 
-[vars]
-TOKEN_TTL = "1800"
-TOLERANCE = "5"
-
 [site]
-bucket = "./src"
+bucket = "."        # Serve index.html, style.css, assets/
+entry-point = "worker"
 
-# wrangler.toml (wrangler v3.88.0^)
-[observability.logs]
-enabled = true
+[build]
+command = ""
