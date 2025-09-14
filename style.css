@@ -1,0 +1,37 @@
+body {
+  font-family: sans-serif;
+  text-align: center;
+  padding: 20px;
+  background: #f5f5f5;
+}
+.captcha-container {
+  position: relative;
+  display: inline-block;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+}
+canvas {
+  border: 1px solid #ccc;
+}
+.puzzle-piece {
+  position: absolute;
+  border: 1px solid #666;
+  pointer-events: none;
+}
+input[type=range] {
+  width: 300px;
+  margin: 15px 0;
+}
+button {
+  padding: 8px 15px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+button:hover {
+  background: #0056b3;
+}
