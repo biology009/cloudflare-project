@@ -2,17 +2,15 @@ name = "slider-captcha-demo"
 main = "worker.js"
 compatibility_date = "2023-10-01"
 
+# Enable logs for debugging
+logpush = true
+
+# KV binding for storing tokens and shortened URLs
 kv_namespaces = [
   { binding = "SHORT_URLS", id = "142c941cc0664e68b71bce4689bd8771" }
 ]
 
-[site]
-bucket = "."        # Serves index.html, style.css, assets/
-entry-point = "worker"
-
-[build]
-command = ""
-
-# Enable logs
-[observability]
-logs = true
+# Serve static assets (HTML, CSS, images) from repo
+[assets]
+directory = "."   # project root
+binding = "ASSETS"
