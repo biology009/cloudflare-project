@@ -74,7 +74,7 @@ export default {
           { expirationTtl: 1800 }
         );
 
-        const html = await env.ASSETS.fetch(new Request(`${urlObj.origin}/index.html`));
+        const html = await env.ASSETS.fetch(new Request("/index.html"));
 
         return new HTMLRewriter()
           .on("script#captcha-config", {
