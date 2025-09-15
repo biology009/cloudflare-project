@@ -8,7 +8,7 @@ kv_namespaces = [
 
 [site]
 bucket = "./public"
-binding = "ASSETS"
+#binding = "ASSETS"
 
 [observability]
 enabled = true
