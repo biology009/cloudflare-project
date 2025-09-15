@@ -9,25 +9,22 @@ export default {
       const urlObj = new URL(request.url);
       const path = urlObj.pathname;
 
-      // Add CORS headers
+      // Add CORS headers for cross-origin flexibility
       const corsHeaders = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       };
 
-      // Handle OPTIONS preflight requests
+      // Handle preflight requests  
       if (request.method === 'OPTIONS') {
         return new Response(null, { headers: corsHeaders });
       }
 
-      // ------------------------------
       // 1. Store URL → KV
-      // ------------------------------
       if (request.method === "POST" && path === "/store") {
         try {
           const body = await request.json();
-          console.log("📩 Incoming JSON:", body);
 
           const originalUrl = body.url;
           if (!originalUrl) {
@@ -48,11 +45,6 @@ export default {
 
           const verifyUrl = `${urlObj.origin}/verify/${token}`;
 
-          console.log("➡️ Original URL:", originalUrl);
-          console.log("🔑 Generated Token:", token);
-          console.log("🔗 Verify URL:", verifyUrl);
-          console.log("💾 Stored in KV:", { token, url: originalUrl });
-
           return new Response(
             JSON.stringify({ token, verify_url: verifyUrl }),
             { 
@@ -64,7 +56,6 @@ export default {
             }
           );
         } catch (err) {
-          console.error("❌ Error in /store:", err);
           return new Response(
             JSON.stringify({ error: "Invalid request body" }),
             { 
@@ -78,9 +69,7 @@ export default {
         }
       }
 
-      // ------------------------------
       // 2. Serve CAPTCHA page
-      // ------------------------------
       if (path.startsWith("/verify/")) {
         const token = path.split("/")[2];
         if (!token) return new Response("Missing token", { 
@@ -89,8 +78,6 @@ export default {
         });
 
         const stored = await env.SHORT_URLS.get(token, { type: "json" });
-        console.log("🔍 KV lookup:", token, "→", stored);
-
         if (!stored || !stored.url) {
           return new Response("Invalid or expired token", { 
             status: 404,
@@ -115,28 +102,26 @@ export default {
           { expirationTtl: 1800 }
         );
 
-        // Fetch index.html correctly - use the original request but change path
-        const assetRequest = new Request(new URL(urlObj.origin + '/index.html'), request);
-        let html = await env.ASSETS.fetch(assetRequest);
-        
-        if (!html.ok) {
-          // Fallback: try without leading slash
-          const fallbackRequest = new Request(new URL(urlObj.origin + 'index.html'), request);
-          html = await env.ASSETS.fetch(fallbackRequest);
+        // --- Correct relative asset fetch for Worker Sites ---
+        // Always use a relative path for env.ASSETS
+        let html = await env.ASSETS.fetch(new Request('/index.html', request));
+        if (!html || !html.ok) {
+          // fallback: try without leading slash
+          html = await env.ASSETS.fetch(new Request('index.html', request));
         }
-
-        if (!html.ok) {
+        if (!html || !html.ok) {
           return new Response("CAPTCHA page not found", { 
             status: 404,
             headers: corsHeaders
           });
         }
 
+        // Prepare dynamic config
         const configScript = `
           <script id="captcha-config">
             const captchaConfig = {
               token: "${token}",
-              image: "${urlObj.origin}${chosen}",
+              image: "${chosen}",
               cutX: ${cutX},
               cutY: ${cutY},
               size: ${size}
@@ -144,6 +129,7 @@ export default {
           </script>
         `;
 
+        // Inject config into <head>
         return new HTMLRewriter()
           .on('head', {
             element(element) {
@@ -153,17 +139,12 @@ export default {
           .transform(html);
       }
 
-      // ------------------------------
       // 3. Verify captcha (AJAX)
-      // ------------------------------
       if (path === "/verify-submit" && request.method === "POST") {
         try {
           const { token, userX } = await request.json();
-          console.log("📩 /verify-submit body:", { token, userX });
 
           const captchaData = await env.SHORT_URLS.get(`captcha:${token}`, { type: "json" });
-          console.log("🔍 Captcha data:", captchaData);
-
           if (!captchaData) {
             return new Response(
               JSON.stringify({ success: false, msg: "Captcha expired" }),
@@ -180,8 +161,6 @@ export default {
           const ok = Math.abs(userX - captchaData.cutX) <= 3;
           if (ok) {
             const stored = await env.SHORT_URLS.get(token, { type: "json" });
-            console.log("🔍 Stored data on success:", stored);
-
             if (stored && stored.url) {
               await env.SHORT_URLS.delete(`captcha:${token}`);
               return new Response(
@@ -206,7 +185,6 @@ export default {
             }
           );
         } catch (error) {
-          console.error("❌ Error in verify-submit:", error);
           return new Response(
             JSON.stringify({ success: false, msg: "Server error" }),
             { 
@@ -220,16 +198,16 @@ export default {
         }
       }
 
-      // ------------------------------
-      // 4. Static assets
-      // ------------------------------
+      // 4. Serve static assets for all other requests
       return env.ASSETS.fetch(request);
 
     } catch (err) {
-      console.error("🔥 Top-level error:", err);
       return new Response("Internal server error", { 
         status: 500,
-        headers: corsHeaders
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'text/plain'
+        }
       });
     }
   },
