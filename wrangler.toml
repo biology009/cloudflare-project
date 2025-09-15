@@ -3,7 +3,7 @@ main = "worker.js"
 compatibility_date = "2023-10-01"
 
 kv_namespaces = [
-  { binding = "SHORT_URLS", id = "142c941cc0664e68b71bce4689bd8771" }
+  { binding = "SHORT_URLS", id = "683937da4cc74da29ee3afccf0fb66cd" }
 ]
 
 [site]
