@@ -102,11 +102,9 @@ export default {
           { expirationTtl: 1800 }
         );
 
-        // --- Correct relative asset fetch for Worker Sites ---
-        // Always use a relative path for env.ASSETS
+        // Fetch index.html
         let html = await env.ASSETS.fetch(new Request('/index.html', request));
         if (!html || !html.ok) {
-          // fallback: try without leading slash
           html = await env.ASSETS.fetch(new Request('index.html', request));
         }
         if (!html || !html.ok) {
@@ -116,12 +114,13 @@ export default {
           });
         }
 
-        // Prepare dynamic config
+        // FIX: Use absolute URL for the image
+        const absoluteImageUrl = `${urlObj.origin}${chosen}`;
         const configScript = `
           <script id="captcha-config">
             const captchaConfig = {
               token: "${token}",
-              image: "${chosen}",
+              image: "${absoluteImageUrl}",
               cutX: ${cutX},
               cutY: ${cutY},
               size: ${size}
@@ -202,6 +201,7 @@ export default {
       return env.ASSETS.fetch(request);
 
     } catch (err) {
+      console.error("Worker error:", err);
       return new Response("Internal server error", { 
         status: 500,
         headers: {
