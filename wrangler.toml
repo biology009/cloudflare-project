@@ -1,4 +1,4 @@
-name = "slider-captcha-demo"
+name = "slider-captcha"
 main = "worker.js"
 compatibility_date = "2023-10-01"
 
@@ -6,8 +6,8 @@ kv_namespaces = [
   { binding = "SHORT_URLS", id = "142c941cc0664e68b71bce4689bd8771" }
 ]
 
-[assets]
-directory = "."
+[site]
+bucket = "./public"
 binding = "ASSETS"
 
 [observability]
