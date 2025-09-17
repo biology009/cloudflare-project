@@ -4,223 +4,53 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Slider CAPTCHA Demo</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f5f5f5;
-      margin: 0;
-      padding: 20px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-    .captcha-container {
-      background: white;
-      padding: 25px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-      text-align: center;
-      max-width: 400px;
-      width: 100%;
-    }
-    h2 {
-      color: #333;
-      margin-bottom: 20px;
-      font-weight: 600;
-    }
-    .image-container {
-      position: relative;
-      margin-bottom: 20px;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      overflow: hidden;
-      height: 200px;
-      width: 100%;
-      background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%),
-                 linear-gradient(45deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%);
-      background-size: 20px 20px;
-      background-position: 0 0, 10px 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .puzzle-image {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      opacity: 0.8;
-      display: none;
-    }
-    .slider-container {
-      margin: 25px 0;
-    }
-    .slider {
-      width: 100%;
-      height: 8px;
-      border-radius: 4px;
-      background: #e0e0e0;
-      outline: none;
-      -webkit-appearance: none;
-    }
-    .slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: #007bff;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-      border: 3px solid white;
-      transition: background 0.2s;
-    }
-    .slider::-webkit-slider-thumb:hover {
-      background: #0056b3;
-    }
-    .slider-label {
-      display: block;
-      margin-top: 10px;
-      color: #666;
-      font-size: 14px;
-    }
-    .verify-btn {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 12px 30px;
-      border-radius: 6px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-      width: 100%;
-      margin-top: 10px;
-    }
-    .verify-btn:hover {
-      background: #0056b3;
-    }
-    .status {
-      margin-top: 15px;
-      padding: 10px;
-      border-radius: 4px;
-      display: none;
-      font-weight: bold;
-    }
-    .error {
-      background: #ffe6e6;
-      color: #d93025;
-      border: 1px solid #ffcccc;
-    }
-    .success {
-      background: #e6f4ea;
-      color: #137333;
-      border: 1px solid #b6e6c9;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="captcha-container">
     <h2>Verify You Are Human</h2>
-    <div class="image-container" id="image-container">
-      <img src="" alt="puzzle" class="puzzle-image" id="puzzle-image">
-      <canvas id="captcha-canvas" width="400" height="200" style="position:absolute;top:0;left:0;z-index:2;"></canvas>
+    
+    <div class="image-container">
+      <!-- This would be your actual image -->
+      <div class="missing-piece"></div>
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                 color: #999; font-size: 14px;">
+        [Puzzle Image Would Appear Here]
+      </div>
     </div>
+    
     <div class="slider-container">
-      <input type="range" class="slider" min="0" max="250" value="125" id="slider">
+      <input type="range" class="slider" min="0" max="250" value="125">
       <span class="slider-label">Slide the puzzle piece to the correct position</span>
     </div>
-    <button class="verify-btn" id="verify-btn">Verify</button>
-    <div class="status error" id="status-msg">
+    
+    <button class="verify-btn">Verify</button>
+    
+    <div class="status error">
       Verification failed. Please try again.
     </div>
   </div>
+
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      if (typeof captchaConfig !== "object") {
-        document.getElementById('status-msg').style.display = 'block';
-        document.getElementById('status-msg').textContent = "Config not loaded.";
-        return;
-      }
-      const { token, image, cutX, cutY, size } = captchaConfig;
-      const puzzleImage = document.getElementById('puzzle-image');
-      const canvas = document.getElementById('captcha-canvas');
-      const ctx = canvas.getContext('2d');
-      const slider = document.getElementById('slider');
-      const statusMsg = document.getElementById('status-msg');
-      let imgLoaded = false;
-
-      canvas.width = 400;
-      canvas.height = 200;
-      puzzleImage.src = image;
-      puzzleImage.style.display = 'block';
-
-      puzzleImage.onload = function() {
-        imgLoaded = true;
-        drawPuzzleAt(slider.value);
-      };
-
-      slider.addEventListener('input', function() {
-        if (imgLoaded) drawPuzzleAt(slider.value);
-      });
-
-      function drawPuzzleAt(sliderVal) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.globalAlpha = 0.8;
-        ctx.drawImage(puzzleImage, 0, 0, canvas.width, canvas.height);
-        ctx.globalAlpha = 1.0;
-
-        // Draw "cut" hole
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(cutX, cutY, size, size);
-        ctx.clip();
-        ctx.clearRect(cutX, cutY, size, size);
-        ctx.restore();
-
-        // Draw puzzle piece where user slides
-        const x = parseInt(sliderVal, 10);
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(x, cutY, size, size);
-        ctx.clip();
-        ctx.drawImage(puzzleImage, cutX, cutY, size, size, x, cutY, size, size);
-        ctx.restore();
-        ctx.save();
-        ctx.strokeStyle = "#007bff";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, cutY, size, size);
-        ctx.restore();
-      }
-
-      document.getElementById('verify-btn').addEventListener('click', async function() {
-        statusMsg.style.display = "block";
-        statusMsg.className = "status";
-        statusMsg.textContent = "Verifying...";
-
-        const userX = parseInt(slider.value, 10);
-
-        try {
-          const res = await fetch('/verify-submit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token, userX })
-          });
-          const data = await res.json();
-          if (data.success) {
-            statusMsg.textContent = '✓ Verification successful! Redirecting...';
-            statusMsg.className = 'status success';
-            setTimeout(() => {
-              window.location.href = data.redirect;
-            }, 1000);
-          } else {
-            statusMsg.textContent = data.msg || 'Verification failed. Please try again.';
-            statusMsg.className = 'status error';
-          }
-        } catch (e) {
-          statusMsg.textContent = "Server error. Please try again.";
-          statusMsg.className = 'status error';
+    // Simple demo functionality
+    document.querySelector('.verify-btn').addEventListener('click', function() {
+      const status = document.querySelector('.status');
+      status.style.display = 'block';
+      status.textContent = 'Verifying...';
+      status.className = 'status';
+      
+      setTimeout(() => {
+        // Simulate random success/failure
+        if (Math.random() > 0.5) {
+          status.textContent = '✓ Verification successful! Redirecting...';
+          status.style.background = '#e6f4ea';
+          status.style.color = '#137333';
+          status.style.border = '1px solid #b6e6c9';
+        } else {
+          status.textContent = 'Verification failed. Please try again.';
+          status.className = 'status error';
         }
-      });
+      }, 1000);
     });
   </script>
 </body>
