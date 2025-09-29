@@ -10,4 +10,4 @@ kv_namespaces = [
 enabled = true
 
 [vars]
-RECAPTCHA_SECRET = "your_recaptcha_secret_key"
+RECAPTCHA_SECRET = "6Lc2LtkrAAAAALlvfdDuwQ_z2hvmY2zUKHZXcAkd"
