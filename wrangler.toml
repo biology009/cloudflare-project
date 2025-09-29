@@ -1,14 +1,13 @@
-name = "slider-captcha"
-main = "worker.js"
-compatibility_date = "2023-10-01"
+name = "recaptcha"
+main = "worker.js/store.js"
+compatibility_date = "2025-09-30"
 
 kv_namespaces = [
   { binding = "SHORT_URLS", id = "683937da4cc74da29ee3afccf0fb66cd" }
 ]
 
-[site]
-bucket = "./public"
-#binding = "ASSETS"
-
 [observability]
 enabled = true
+
+[vars]
+RECAPTCHA_SECRET = "your_recaptcha_secret_key"
